@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>匿名来信 | 粉色树洞</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(145deg, #ffe6f0 0%, #ffd9e8 100%);
+            font-family: 'Segoe UI', 'Quicksand', system-ui, sans-serif;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        body::before {
+            content: "🌸";
+            font-size: 120px;
+            position: absolute;
+            bottom: 20px;
+            left: 10px;
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: "💌";
+            font-size: 140px;
+            position: absolute;
+            top: 20px;
+            right: 15px;
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        .letter-card {
+            max-width: 560px;
+            width: 100%;
+            background-color: #fffef7;
+            border-radius: 56px;
+            box-shadow: 0 25px 45px rgba(245, 165, 185, 0.25);
+            overflow: hidden;
+            position: relative;
+            z-index: 2;
+            border: 1px solid #ffe2ed;
+        }
+
+        .card-header {
+            background: #ffb7c5;
+            background-image: radial-gradient(circle at 10% 30%, rgba(255,245,240,0.5) 2%, transparent 2.5%);
+            background-size: 35px 35px;
+            padding: 2rem 1.8rem 1.8rem;
+            text-align: center;
+            border-bottom: 3px solid #ffe0e8;
+        }
+
+        .card-header h1 {
+            font-size: 2.4rem;
+            font-weight: 600;
+            color: #fff2f5;
+            text-shadow: 2px 2px 0 #e28f9e;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sub {
+            background: #ffeef2;
+            display: inline-block;
+            margin-top: 12px;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            color: #cf7f8f;
+        }
+
+        .card-body {
+            padding: 1.8rem 2rem 2rem;
+        }
+
+        .info-note {
+            background: #fff3f6;
+            border-radius: 48px;
+            padding: 0.6rem 1rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #e18b9c;
+        }
+
+        .input-group {
+            margin-bottom: 1.6rem;
+        }
+
+        .input-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: #c96f82;
+            margin-bottom: 10px;
+        }
+
+        textarea, input {
+            width: 100%;
+            border: 2px solid #ffd9e4;
+            border-radius: 32px;
+            padding: 14px 20px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            background: #ffffff;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        textarea:focus, input:focus {
+            border-color: #ff9ab0;
+            box-shadow: 0 0 0 4px rgba(255, 154, 176, 0.2);
+        }
+
+        textarea {
+            min-height: 130px;
+            resize: vertical;
+        }
+
+        .char-counter {
+            text-align: right;
+            font-size: 0.7rem;
+            margin-top: 6px;
+            color: #d99aaa;
+        }
+
+        .send-btn {
+            background: #ffb1c2;
+            border: none;
+            width: 100%;
+            padding: 14px 0;
+            border-radius: 60px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 5px 0 #c47184;
+            margin-top: 12px;
+        }
+
+        .send-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #c47184;
+        }
+
+        .send-btn.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .admin-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.7rem;
+            color: #eeb7c3;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .admin-link span {
+            background: #fff0f3;
+            padding: 4px 12px;
+            border-radius: 30px;
+            display: inline-block;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #fff9fb;
+            border-radius: 48px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            border: 1px solid #ffd2df;
+        }
+
+        .modal-header {
+            background: #ffb7c5;
+            padding: 18px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+
+        .modal-header h3 {
+            font-size: 1.3rem;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: white;
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+
+        .password-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #ffd9e4;
+            border-radius: 40px;
+            margin-bottom: 16px;
+            font-size: 1rem;
+        }
+
+        .admin-btn {
+            background: #ffb1c2;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 40px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .message-item {
+            background: #ffeef2;
+            margin-bottom: 16px;
+            border-radius: 24px;
+            padding: 16px;
+            border-left: 4px solid #ff94ae;
+        }
+
+        .message-name {
+            font-weight: bold;
+            color: #cf7185;
+            margin-bottom: 8px;
+        }
+
+        .message-time {
+            font-size: 10px;
+            color: #eda5b5;
+            margin-bottom: 8px;
+        }
+
+        .message-content {
+            color: #5e474f;
+            font-size: 0.9rem;
+            word-break: break-word;
+            margin: 10px 0;
+        }
+
+        .delete-msg {
+            background: #ffd9e4;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            cursor: pointer;
+            color: #c96f82;
+            margin-top: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #d18b9b;
+            padding: 40px 20px;
+        }
+
+        .footer-love {
+            text-align: center;
+            padding: 0.9rem 1rem 1.5rem;
+            font-size: 0.7rem;
+            color: #eeb7c3;
+            background: #fffbfb;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ffdae3;
+            color: #bf6f82;
+            padding: 20px 40px;
+            border-radius: 80px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        @media (max-width: 500px) {
+            .card-body {
+                padding: 1.5rem;
+            }
+            .card-header h1 {
+                font-size: 1.9rem;
+            }
+            .toast {
+                padding: 16px 32px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="letter-card">
+    <div class="card-header">
+        <h1>
+            <span>📬</span> 匿名来信 <span>💌</span>
+        </h1>
+        <div class="sub">✨ 悄悄话 · 只属于你和我 ✨</div>
+    </div>
+
+    <div class="card-body">
+        <div class="info-note">
+            <span>🕊️</span> 完全匿名 · 无需登录 · 勇敢说出心底话 <span>🌸</span>
+        </div>
+
+        <div class="input-group">
+            <label><i>✍️</i> 你的匿名心声</label>
+            <textarea id="messageContent" maxlength="500" placeholder="在这里写下你想对我说的话..."></textarea>
+            <div class="char-counter">
+                <span id="charCount">0</span> / 500
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label><i>🖌️</i> 昵称 (选填)</label>
+            <input type="text" id="senderName" maxlength="30" placeholder="例如：一只小猫咪 / 树洞里的星星">
+        </div>
+
+        <button class="send-btn" id="sendButton">
+            <span>✉️</span> 寄出心声 <span>🎀</span>
+        </button>
+        
+        <div class="admin-link" id="adminLink">
+            <span>🔒 管理来信</span>
+        </div>
+    </div>
+    <div class="footer-love">
+        🌷 所有来信都会被温柔珍藏 🌷
+    </div>
+</div>
+
+<!-- 密码验证模态框 -->
+<div id="passwordModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>🔐 管理员验证</h3>
+            <button class="close-modal" onclick="closePasswordModal()">✖️</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin-bottom: 16px; color: #c96f82;">请输入管理密码查看所有匿名来信：</p>
+            <input type="password" id="adminPassword" class="password-input" placeholder="输入密码">
+            <button class="admin-btn" onclick="verifyPassword()">验证并进入</button>
+        </div>
+    </div>
+</div>
+
+<!-- 管理面板模态框 -->
+<div id="adminPanel" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>📬 收到的匿名信 (<span id="msgCount">0</span>)</h3>
+            <button class="close-modal" onclick="closeAdminPanel()">✖️</button>
+        </div>
+        <div class="modal-body" id="messageList">
+            <div class="empty-state">加载中...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ========== 🔴 请在这里填写您的微信测试号信息 ==========
+    // 步骤1：访问 https://mp.weixin.qq.com/debug/cgi-bin/sandbox?t=sandbox/login
+    // 步骤2：微信扫码登录
+    // 步骤3：复制下面的信息填进来
+    
+    const WECHAT_CONFIG = {
+        appID: "wx652d38f1b4772433",        // 🔴 填写您的 appID（以wx开头的字符串）
+        appsecret: "2f6f8a2cd7f03109fba3ca65eb432931",    // 🔴 填写您的 appsecret
+        templateId: ""    // 🔴 填写模板ID（需要创建模板，下面有教程）
+    };
+    
+    // 您的 openId（扫码关注测试号后，在用户列表里可以看到）
+    const YOUR_OPEN_ID = "oi_CZ2yiYSrgT10f3z9yfjHbmLec";  // 🔴 填写您的 openId
+    
+    // 管理密码（您自己记住就行）
+    let ADMIN_PASSWORD = "love1225";
+    
+    // 存储消息记录
+    let receivedMessages = [];
+    
+    // ========== 微信模板消息配置教程 ==========
+    // 1. 登录测试号页面后，往下翻找到【模板消息接口】
+    // 2. 点击【新增测试模板】
+    // 3. 模板标题填：匿名来信通知
+    // 4. 模板内容填：
+    //    {{first.DATA}}
+    //    昵称：{{keyword1.DATA}}
+    //    内容：{{keyword2.DATA}}
+    //    时间：{{keyword3.DATA}}
+    //    {{remark.DATA}}
+    // 5. 提交后会得到一个模板ID，复制填入上面的 templateId
+    
+    // 如果没有配置模板，可以使用备用方案：控制台输出 + localStorage
+    
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2500);
+    }
+    
+    // 获取微信 access_token
+    async function getWechatAccessToken() {
+        if (!WECHAT_CONFIG.appID || !WECHAT_CONFIG.appsecret) {
+            console.log("⚠️ 未配置微信测试号信息");
+            return null;
+        }
+        
+        const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${WECHAT_CONFIG.appID}&secret=${WECHAT_CONFIG.appsecret}`;
+        
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data.access_token) {
+                return data.access_token;
+            } else {
+                console.error("获取access_token失败:", data);
+                return null;
+            }
+        } catch (e) {
+            console.error("请求失败:", e);
+            return null;
+        }
+    }
+    
+    // 发送微信模板消息
+    async function sendWechatMessage(name, content, time) {
+        if (!WECHAT_CONFIG.appID || !WECHAT_CONFIG.appsecret) {
+            console.log("⚠️ 未配置微信，消息已保存到本地");
+            return false;
+        }
+        
+        if (!YOUR_OPEN_ID) {
+            console.log("⚠️ 未配置您的 openId，消息已保存到本地");
+            return false;
+        }
+        
+        const accessToken = await getWechatAccessToken();
+        if (!accessToken) {
+            console.log("❌ 获取access_token失败");
+            return false;
+        }
+        
+        // 如果没有配置模板ID，使用简单文本消息（需要用户已关注）
+        if (!WECHAT_CONFIG.templateId) {
+            // 使用客服消息接口（需要48小时内有过互动）
+            const msgUrl = `https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token=${accessToken}`;
+            const msgData = {
+                touser: YOUR_OPEN_ID,
+                msgtype: "text",
+                text: {
+                    content: `📬 新的匿名来信\n\n昵称：${name}\n内容：${content}\n时间：${time}`
+                }
+            };
+            
+            try {
+                const response = await fetch(msgUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(msgData)
+                });
+                const result = await response.json();
+                if (result.errcode === 0) {
+                    console.log("✅ 微信消息发送成功");
+                    return true;
+                } else {
+                    console.error("发送失败:", result);
+                    return false;
+                }
+            } catch (e) {
+                console.error("请求失败:", e);
+                return false;
+            }
+        }
+        
+        // 使用模板消息
+        const msgUrl = `https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=${accessToken}`;
+        const templateData = {
+            touser: YOUR_OPEN_ID,
+            template_id: WECHAT_CONFIG.templateId,
+            data: {
+                first: { value: "✨ 收到一条新的匿名悄悄话 ✨", color: "#ff69b4" },
+                keyword1: { value: name, color: "#c96f82" },
+                keyword2: { value: content.length > 50 ? content.substring(0, 50) + "..." : content, color: "#5e474f" },
+                keyword3: { value: time, color: "#eeb7c3" },
+                remark: { value: "点击管理来信查看全部内容", color: "#999" }
+            }
+        };
+        
+        try {
+            const response = await fetch(msgUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(templateData)
+            });
+            const result = await response.json();
+            if (result.errcode === 0) {
+                console.log("✅ 模板消息发送成功");
+                return true;
+            } else {
+                console.error("模板消息发送失败:", result);
+                return false;
+            }
+        } catch (e) {
+            console.error("请求失败:", e);
+            return false;
+        }
+    }
+    
+    async function sendMessage() {
+        const contentEl = document.getElementById("messageContent");
+        const content = contentEl.value.trim();
+        
+        if (content === "") {
+            showToast("💬 请写下你想说的话再寄出～");
+            return;
+        }
+        
+        const nameEl = document.getElementById("senderName");
+        const name = nameEl.value.trim() || "匿名小伙伴";
+        const time = new Date().toLocaleString('zh-CN');
+        
+        const sendBtn = document.getElementById("sendButton");
+        sendBtn.classList.add("disabled");
+        sendBtn.disabled = true;
+        
+        const messageData = {
+            id: Date.now(),
+            name: name,
+            content: content,
+            time: time,
+            timestamp: Date.now()
+        };
+        
+        // 保存到本地存储
+        const stored = localStorage.getItem("anonymous_letters_backup") || "[]";
+        const backup = JSON.parse(stored);
+        backup.unshift(messageData);
+        localStorage.setItem("anonymous_letters_backup", JSON.stringify(backup));
+        
+        // 尝试发送微信消息
+        const wechatSuccess = await sendWechatMessage(name, content, time);
+        
+        if (wechatSuccess) {
+            showToast("💖 悄悄话已寄出！我会在微信上收到 💖");
+        } else {
+            showToast("💖 悄悄话已寄出！我会收到并珍藏 💖");
+            console.log("📬 新消息已保存，内容如下：");
+            console.log("   昵称:", name);
+            console.log("   内容:", content);
+            console.log("   时间:", time);
+        }
+        
+        // 清空表单
+        contentEl.value = "";
+        updateCharCount();
+        
+        sendBtn.classList.remove("disabled");
+        sendBtn.disabled = false;
+    }
+    
+    // 管理面板功能
+    function openPasswordModal() {
+        document.getElementById("passwordModal").classList.add("active");
+    }
+    
+    function closePasswordModal() {
+        document.getElementById("passwordModal").classList.remove("active");
+    }
+    
+    function closeAdminPanel() {
+        document.getElementById("adminPanel").classList.remove("active");
+    }
+    
+    function verifyPassword() {
+        const inputPassword = document.getElementById("adminPassword").value;
+        if (inputPassword === ADMIN_PASSWORD) {
+            closePasswordModal();
+            renderMessageList();
+            document.getElementById("adminPanel").classList.add("active");
+        } else {
+            showToast("❌ 密码错误！");
+        }
+    }
+    
+    function renderMessageList() {
+        const container = document.getElementById("messageList");
+        const countSpan = document.getElementById("msgCount");
+        
+        const stored = localStorage.getItem("anonymous_letters_backup") || "[]";
+        const messages = JSON.parse(stored);
+        
+        countSpan.textContent = messages.length;
+        
+        if (messages.length === 0) {
+            container.innerHTML = '<div class="empty-state">✨ 还没有匿名信 ✨</div>';
+            return;
+        }
+        
+        container.innerHTML = messages.map((msg) => `
+            <div class="message-item">
+                <div class="message-name">🐣 ${escapeHtml(msg.name)}</div>
+                <div class="message-time">📅 ${msg.time}</div>
+                <div class="message-content">${escapeHtml(msg.content)}</div>
+            </div>
+        `).join('');
+    }
+    
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+    
+    function updateCharCount() {
+        const textarea = document.getElementById("messageContent");
+        const countSpan = document.getElementById("charCount");
+        countSpan.textContent = textarea.value.length;
+    }
+    
+    // 显示配置提示
+    function showConfigHelp() {
+        if (!WECHAT_CONFIG.appID || !WECHAT_CONFIG.appsecret) {
+            console.log("");
+            console.log("📱 ========== 微信测试号配置教程 ==========");
+            console.log("1. 访问 https://mp.weixin.qq.com/debug/cgi-bin/sandbox?t=sandbox/login");
+            console.log("2. 微信扫码登录");
+            console.log("3. 复制 appID 和 appsecret 填入代码中的 WECHAT_CONFIG");
+            console.log("4. 用微信扫描测试号二维码，关注测试号");
+            console.log("5. 在用户列表中找到您的 openId，填入 YOUR_OPEN_ID");
+            console.log("==========================================");
+            console.log("");
+        }
+    }
+    
+    // 初始化
+    document.getElementById("sendButton").addEventListener("click", sendMessage);
+    document.getElementById("adminLink").addEventListener("click", openPasswordModal);
+    document.getElementById("messageContent").addEventListener("input", updateCharCount);
+    updateCharCount();
+    
+    showConfigHelp();
+    console.log("🔐 管理密码:", ADMIN_PASSWORD);
+</script>
+</body>
+</html>
