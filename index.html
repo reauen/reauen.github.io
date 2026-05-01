@@ -286,17 +286,6 @@
             margin: 10px 0;
         }
 
-        .delete-msg {
-            background: #ffd9e4;
-            border: none;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            cursor: pointer;
-            color: #c96f82;
-            margin-top: 8px;
-        }
-
         .empty-state {
             text-align: center;
             color: #d18b9b;
@@ -318,9 +307,9 @@
             transform: translateX(-50%);
             background: #ffdae3;
             color: #bf6f82;
-            padding: 20px 40px;
+            padding: 16px 32px;
             border-radius: 80px;
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-weight: bold;
             z-index: 1000;
             box-shadow: 0 8px 20px rgba(0,0,0,0.15);
@@ -333,10 +322,6 @@
             .card-header h1 {
                 font-size: 1.9rem;
             }
-            .toast {
-                padding: 16px 32px;
-                font-size: 1rem;
-            }
         }
     </style>
 </head>
@@ -345,7 +330,7 @@
 <div class="letter-card">
     <div class="card-header">
         <h1>
-            <span>📬</span> 给椰椰的匿名信 <span>💌</span>
+            <span>📬</span> 给椰椰的信 <span>💌</span>
         </h1>
         <div class="sub">✨ 悄悄话 · 只属于你和我 ✨</div>
     </div>
@@ -381,7 +366,6 @@
     </div>
 </div>
 
-<!-- 密码验证模态框 -->
 <div id="passwordModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -389,14 +373,13 @@
             <button class="close-modal" onclick="closePasswordModal()">✖️</button>
         </div>
         <div class="modal-body">
-            <p style="margin-bottom: 16px; color: #c96f82;">这里是椰子专属区域！</p>
+            <p style="margin-bottom: 16px; color: #c96f82;">这里是椰椰专属区域！</p>
             <input type="password" id="adminPassword" class="password-input" placeholder="输入密码">
             <button class="admin-btn" onclick="verifyPassword()">验证并进入</button>
         </div>
     </div>
 </div>
 
-<!-- 管理面板模态框 -->
 <div id="adminPanel" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -410,39 +393,27 @@
 </div>
 
 <script>
-    // ========== 🔴 请在这里填写您的微信测试号信息 ==========
+    // ========== 🔴 微信测试号配置 ==========
     // 步骤1：访问 https://mp.weixin.qq.com/debug/cgi-bin/sandbox?t=sandbox/login
     // 步骤2：微信扫码登录
     // 步骤3：复制下面的信息填进来
     
     const WECHAT_CONFIG = {
-        appID: "wx652d38f1b4772433",        // 🔴 填写您的 appID（以wx开头的字符串）
-        appsecret: "2f6f8a2cd7f03109fba3ca65eb432931",    // 🔴 填写您的 appsecret
-        templateId: ""    // 🔴 填写模板ID（需要创建模板，下面有教程）
+        appID: "wx652d38f1b4772433",        // 🔴 您的 appID
+        appsecret: "2f6f8a2cd7f03109fba3ca65eb432931",  // 🔴 您的 appsecret
+        templateId: ""                       // 留空即可
     };
     
-    // 您的 openId（扫码关注测试号后，在用户列表里可以看到）
-    const YOUR_OPEN_ID = "oi_CZ2yiYSrgT10f3z9yfjHbmLec";  // 🔴 填写您的 openId
+    const YOUR_OPEN_ID = "oi_CZ2yiYSrgT10f3z9yfjHbmLec";  // 🔴 您的 openId
     
-    // 管理密码（您自己记住就行）
+    // 管理密码
     let ADMIN_PASSWORD = "love1225";
     
     // 存储消息记录
     let receivedMessages = [];
     
-    // ========== 微信模板消息配置教程 ==========
-    // 1. 登录测试号页面后，往下翻找到【模板消息接口】
-    // 2. 点击【新增测试模板】
-    // 3. 模板标题填：匿名来信通知
-    // 4. 模板内容填：
-    //    {{first.DATA}}
-    //    昵称：{{keyword1.DATA}}
-    //    内容：{{keyword2.DATA}}
-    //    时间：{{keyword3.DATA}}
-    //    {{remark.DATA}}
-    // 5. 提交后会得到一个模板ID，复制填入上面的 templateId
-    
-    // 如果没有配置模板，可以使用备用方案：控制台输出 + localStorage
+    // 免费CORS代理（解决跨域问题）
+    const CORS_PROXY = "https://api.allorigins.win/raw?url=";
     
     function showToast(message) {
         const toast = document.createElement('div');
@@ -452,7 +423,7 @@
         setTimeout(() => toast.remove(), 2500);
     }
     
-    // 获取微信 access_token
+    // 通过代理获取微信 access_token
     async function getWechatAccessToken() {
         if (!WECHAT_CONFIG.appID || !WECHAT_CONFIG.appsecret) {
             console.log("⚠️ 未配置微信测试号信息");
@@ -462,9 +433,19 @@
         const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${WECHAT_CONFIG.appID}&secret=${WECHAT_CONFIG.appsecret}`;
         
         try {
-            const response = await fetch(url);
+            // 使用 CORS 代理
+            const proxyUrl = `https://cors-anywhere.herokuapp.com/${url}`;
+            
+            const response = await fetch(proxyUrl, {
+                method: 'GET',
+                headers: {
+                    'Origin': window.location.origin
+                }
+            });
+            
             const data = await response.json();
             if (data.access_token) {
+                console.log("✅ 获取access_token成功");
                 return data.access_token;
             } else {
                 console.error("获取access_token失败:", data);
@@ -476,7 +457,7 @@
         }
     }
     
-    // 发送微信模板消息
+    // 发送微信消息
     async function sendWechatMessage(name, content, time) {
         if (!WECHAT_CONFIG.appID || !WECHAT_CONFIG.appsecret) {
             console.log("⚠️ 未配置微信，消息已保存到本地");
@@ -494,64 +475,39 @@
             return false;
         }
         
-        // 如果没有配置模板ID，使用简单文本消息（需要用户已关注）
-        if (!WECHAT_CONFIG.templateId) {
-            // 使用客服消息接口（需要48小时内有过互动）
-            const msgUrl = `https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token=${accessToken}`;
-            const msgData = {
-                touser: YOUR_OPEN_ID,
-                msgtype: "text",
-                text: {
-                    content: `📬 新的匿名来信\n\n昵称：${name}\n内容：${content}\n时间：${time}`
-                }
-            };
-            
-            try {
-                const response = await fetch(msgUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(msgData)
-                });
-                const result = await response.json();
-                if (result.errcode === 0) {
-                    console.log("✅ 微信消息发送成功");
-                    return true;
-                } else {
-                    console.error("发送失败:", result);
-                    return false;
-                }
-            } catch (e) {
-                console.error("请求失败:", e);
-                return false;
-            }
-        }
+        // 使用客服消息接口
+        const msgUrl = `https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token=${accessToken}`;
         
-        // 使用模板消息
-        const msgUrl = `https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=${accessToken}`;
-        const templateData = {
+        const msgData = {
             touser: YOUR_OPEN_ID,
-            template_id: WECHAT_CONFIG.templateId,
-            data: {
-                first: { value: "✨ 收到一条新的匿名悄悄话 ✨", color: "#ff69b4" },
-                keyword1: { value: name, color: "#c96f82" },
-                keyword2: { value: content.length > 50 ? content.substring(0, 50) + "..." : content, color: "#5e474f" },
-                keyword3: { value: time, color: "#eeb7c3" },
-                remark: { value: "点击管理来信查看全部内容", color: "#999" }
+            msgtype: "text",
+            text: {
+                content: `📬 新的匿名来信\n\n✨ 昵称：${name}\n💬 内容：${content}\n⏰ 时间：${time}\n\n💖 点击管理来信查看全部`
             }
         };
         
         try {
-            const response = await fetch(msgUrl, {
+            const proxyUrl = `https://cors-anywhere.herokuapp.com/${msgUrl}`;
+            
+            const response = await fetch(proxyUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(templateData)
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Origin': window.location.origin
+                },
+                body: JSON.stringify(msgData)
             });
             const result = await response.json();
             if (result.errcode === 0) {
-                console.log("✅ 模板消息发送成功");
+                console.log("✅ 微信消息发送成功！请检查您的微信");
                 return true;
             } else {
-                console.error("模板消息发送失败:", result);
+                console.error("发送失败:", result);
+                if (result.errcode === 40001) {
+                    showToast("⚠️ 微信配置有误，请检查appsecret");
+                } else if (result.errcode === 43004) {
+                    showToast("⚠️ 请先用微信扫码关注测试号");
+                }
                 return false;
             }
         } catch (e) {
@@ -591,11 +547,14 @@
         backup.unshift(messageData);
         localStorage.setItem("anonymous_letters_backup", JSON.stringify(backup));
         
+        // 显示发送中提示
+        showToast("📡 正在投递...");
+        
         // 尝试发送微信消息
         const wechatSuccess = await sendWechatMessage(name, content, time);
         
         if (wechatSuccess) {
-            showToast("💖 悄悄话已寄出！我会在微信上收到 💖");
+            showToast("💖 悄悄话已寄出！请查看您的微信 💖");
         } else {
             showToast("💖 悄悄话已寄出！我会收到并珍藏 💖");
             console.log("📬 新消息已保存，内容如下：");
@@ -612,7 +571,6 @@
         sendBtn.disabled = false;
     }
     
-    // 管理面板功能
     function openPasswordModal() {
         document.getElementById("passwordModal").classList.add("active");
     }
@@ -671,29 +629,15 @@
         countSpan.textContent = textarea.value.length;
     }
     
-    // 显示配置提示
-    function showConfigHelp() {
-        if (!WECHAT_CONFIG.appID || !WECHAT_CONFIG.appsecret) {
-            console.log("");
-            console.log("📱 ========== 微信测试号配置教程 ==========");
-            console.log("1. 访问 https://mp.weixin.qq.com/debug/cgi-bin/sandbox?t=sandbox/login");
-            console.log("2. 微信扫码登录");
-            console.log("3. 复制 appID 和 appsecret 填入代码中的 WECHAT_CONFIG");
-            console.log("4. 用微信扫描测试号二维码，关注测试号");
-            console.log("5. 在用户列表中找到您的 openId，填入 YOUR_OPEN_ID");
-            console.log("==========================================");
-            console.log("");
-        }
-    }
-    
     // 初始化
     document.getElementById("sendButton").addEventListener("click", sendMessage);
     document.getElementById("adminLink").addEventListener("click", openPasswordModal);
     document.getElementById("messageContent").addEventListener("input", updateCharCount);
     updateCharCount();
     
-    showConfigHelp();
     console.log("🔐 管理密码:", ADMIN_PASSWORD);
+    console.log("📱 微信测试号已配置，appID:", WECHAT_CONFIG.appID);
+    console.log("📱 您的openId:", YOUR_OPEN_ID);
 </script>
 </body>
 </html>
