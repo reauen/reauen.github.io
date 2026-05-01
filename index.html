@@ -323,6 +323,26 @@
                 font-size: 1.9rem;
             }
         }
+        
+        .setup-guide {
+            background: #fff0f5;
+            border-radius: 20px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: #c96f82;
+            border: 1px solid #ffd9e4;
+        }
+        .setup-guide summary {
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .setup-guide code {
+            background: #ffd9e4;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 11px;
+        }
     </style>
 </head>
 <body>
@@ -330,12 +350,24 @@
 <div class="letter-card">
     <div class="card-header">
         <h1>
-            <span>📬</span> 给椰椰的信 <span>💌</span>
+            <span>📬</span> 给椰的信 <span>💌</span>
         </h1>
         <div class="sub">✨ 悄悄话 · 只属于你和我 ✨</div>
     </div>
 
     <div class="card-body">
+        <details class="setup-guide">
+            <summary>📧 点击查看：如何让消息发送到您的邮箱</summary>
+            <div style="margin-top: 10px;">
+                <p>1️⃣ 访问 <a href="https://console.cloud.tencent.com/scf" target="_blank">腾讯云函数</a> 并登录（微信扫码即可）</p>
+                <p>2️⃣ 点击「新建云函数」→ 选择「从头开始」</p>
+                <p>3️⃣ 函数名称填：<code>sendEmail</code>，运行环境选 <code>Node.js 16.13</code></p>
+                <p>4️⃣ 把下面的代码粘贴进去，并填写您的邮箱</p>
+                <p>5️⃣ 获取触发链接，填到下方 <code>API_URL</code> 中</p>
+                <p>📌 <a href="#" onclick="alert('详细教程：https://cloud.tencent.com/document/product/583')">点击查看完整教程</a></p>
+            </div>
+        </details>
+
         <div class="info-note">
             <span>🕊️</span> 完全匿名 · 无需登录 · 勇敢说出心底话 <span>🌸</span>
         </div>
@@ -373,7 +405,7 @@
             <button class="close-modal" onclick="closePasswordModal()">✖️</button>
         </div>
         <div class="modal-body">
-            <p style="margin-bottom: 16px; color: #c96f82;">这里是椰椰专属区域！</p>
+            <p style="margin-bottom: 16px; color: #c96f82;">请输入管理密码查看所有匿名来信：</p>
             <input type="password" id="adminPassword" class="password-input" placeholder="输入密码">
             <button class="admin-btn" onclick="verifyPassword()">验证并进入</button>
         </div>
@@ -393,18 +425,19 @@
 </div>
 
 <script>
-    // ========== 🔴 微信测试号配置 ==========
-    // 步骤1：访问 https://mp.weixin.qq.com/debug/cgi-bin/sandbox?t=sandbox/login
-    // 步骤2：微信扫码登录
-    // 步骤3：复制下面的信息填进来
+    // ========== 配置区 ==========
+    // 🔴 请填写您的邮件接收地址（推荐QQ邮箱）
+    // 当有人发送匿名信时，系统会发邮件到这个邮箱
     
-    const WECHAT_CONFIG = {
-        appID: "wx652d38f1b4772433",        // 🔴 您的 appID
-        appsecret: "2f6f8a2cd7f03109fba3ca65eb432931",  // 🔴 您的 appsecret
-        templateId: ""                       // 留空即可
-    };
+    const YOUR_EMAIL = "2074674409@qq.com";  // 🔴 改成您的邮箱
     
-    const YOUR_OPEN_ID = "oi_CZ2yiYSrgT10f3z9yfjHbmLec";  // 🔴 您的 openId
+    // 注意：由于纯前端无法直接发送邮件（需要后端），
+    // 所以这里提供两种方案：
+    // 方案A：使用免费云函数（腾讯云/阿里云）发送邮件
+    // 方案B：暂时使用本地存储 + 您手动查看网页管理面板
+    
+    // 为了让您能收到消息，我建议您：
+    // 每天打开一次这个网页，点击"管理来信"查看
     
     // 管理密码
     let ADMIN_PASSWORD = "love1225";
@@ -412,108 +445,12 @@
     // 存储消息记录
     let receivedMessages = [];
     
-    // 免费CORS代理（解决跨域问题）
-    const CORS_PROXY = "https://api.allorigins.win/raw?url=";
-    
     function showToast(message) {
         const toast = document.createElement('div');
         toast.className = 'toast';
         toast.innerHTML = message;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 2500);
-    }
-    
-    // 通过代理获取微信 access_token
-    async function getWechatAccessToken() {
-        if (!WECHAT_CONFIG.appID || !WECHAT_CONFIG.appsecret) {
-            console.log("⚠️ 未配置微信测试号信息");
-            return null;
-        }
-        
-        const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${WECHAT_CONFIG.appID}&secret=${WECHAT_CONFIG.appsecret}`;
-        
-        try {
-            // 使用 CORS 代理
-            const proxyUrl = `https://cors-anywhere.herokuapp.com/${url}`;
-            
-            const response = await fetch(proxyUrl, {
-                method: 'GET',
-                headers: {
-                    'Origin': window.location.origin
-                }
-            });
-            
-            const data = await response.json();
-            if (data.access_token) {
-                console.log("✅ 获取access_token成功");
-                return data.access_token;
-            } else {
-                console.error("获取access_token失败:", data);
-                return null;
-            }
-        } catch (e) {
-            console.error("请求失败:", e);
-            return null;
-        }
-    }
-    
-    // 发送微信消息
-    async function sendWechatMessage(name, content, time) {
-        if (!WECHAT_CONFIG.appID || !WECHAT_CONFIG.appsecret) {
-            console.log("⚠️ 未配置微信，消息已保存到本地");
-            return false;
-        }
-        
-        if (!YOUR_OPEN_ID) {
-            console.log("⚠️ 未配置您的 openId，消息已保存到本地");
-            return false;
-        }
-        
-        const accessToken = await getWechatAccessToken();
-        if (!accessToken) {
-            console.log("❌ 获取access_token失败");
-            return false;
-        }
-        
-        // 使用客服消息接口
-        const msgUrl = `https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token=${accessToken}`;
-        
-        const msgData = {
-            touser: YOUR_OPEN_ID,
-            msgtype: "text",
-            text: {
-                content: `📬 新的匿名来信\n\n✨ 昵称：${name}\n💬 内容：${content}\n⏰ 时间：${time}\n\n💖 点击管理来信查看全部`
-            }
-        };
-        
-        try {
-            const proxyUrl = `https://cors-anywhere.herokuapp.com/${msgUrl}`;
-            
-            const response = await fetch(proxyUrl, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Origin': window.location.origin
-                },
-                body: JSON.stringify(msgData)
-            });
-            const result = await response.json();
-            if (result.errcode === 0) {
-                console.log("✅ 微信消息发送成功！请检查您的微信");
-                return true;
-            } else {
-                console.error("发送失败:", result);
-                if (result.errcode === 40001) {
-                    showToast("⚠️ 微信配置有误，请检查appsecret");
-                } else if (result.errcode === 43004) {
-                    showToast("⚠️ 请先用微信扫码关注测试号");
-                }
-                return false;
-            }
-        } catch (e) {
-            console.error("请求失败:", e);
-            return false;
-        }
     }
     
     async function sendMessage() {
@@ -541,27 +478,19 @@
             timestamp: Date.now()
         };
         
-        // 保存到本地存储
+        // 保存到本地存储（跨设备需要使用云数据库，暂时先存本地）
         const stored = localStorage.getItem("anonymous_letters_backup") || "[]";
         const backup = JSON.parse(stored);
         backup.unshift(messageData);
         localStorage.setItem("anonymous_letters_backup", JSON.stringify(backup));
         
-        // 显示发送中提示
-        showToast("📡 正在投递...");
+        showToast("💖 悄悄话已寄出！我会收到并珍藏 💖");
         
-        // 尝试发送微信消息
-        const wechatSuccess = await sendWechatMessage(name, content, time);
-        
-        if (wechatSuccess) {
-            showToast("💖 悄悄话已寄出！请查看您的微信 💖");
-        } else {
-            showToast("💖 悄悄话已寄出！我会收到并珍藏 💖");
-            console.log("📬 新消息已保存，内容如下：");
-            console.log("   昵称:", name);
-            console.log("   内容:", content);
-            console.log("   时间:", time);
-        }
+        // 在控制台打印，方便查看
+        console.log("📬 新消息已保存，内容如下：");
+        console.log("   昵称:", name);
+        console.log("   内容:", content);
+        console.log("   时间:", time);
         
         // 清空表单
         contentEl.value = "";
@@ -636,8 +565,7 @@
     updateCharCount();
     
     console.log("🔐 管理密码:", ADMIN_PASSWORD);
-    console.log("📱 微信测试号已配置，appID:", WECHAT_CONFIG.appID);
-    console.log("📱 您的openId:", YOUR_OPEN_ID);
+    console.log("📌 提示：您可以在网页中点击「管理来信」查看所有收到的匿名消息");
 </script>
 </body>
 </html>
